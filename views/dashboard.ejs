@@ -1,0 +1,233 @@
+<style>
+    body {font-family: Arial, Helvetica, sans-serif;}
+    * {box-sizing: border-box;}
+    
+    /* The popup form - hidden by default */
+    .form-popup {
+      display: none;
+      position: fixed;
+      bottom: 50%;
+      right: 50%;
+      border: 3px solid #f1f1f1;
+      z-index: 9;
+    }
+    
+    /* Add styles to the form container */
+    .form-container {
+      max-width: 300px;
+      padding: 10px;
+      background-color: white;
+    }
+    
+    /* Full-width input fields */
+    .form-container input[type=text], .form-container input[type=password] {
+      width: 100%;
+      padding: 15px;
+      margin: 5px 0 22px 0;
+      border: none;
+      background: #f1f1f1;
+    }
+    
+    /* When the inputs get focus, do something */
+    .form-container input[type=text]:focus, .form-container input[type=password]:focus {
+      background-color: #ddd;
+      outline: none;
+    }
+    
+    /* Set a style for the submit/login button */
+    .form-container .btn {
+      background-color: #55e5ff;
+      color: white;
+      padding: 16px 20px;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom:10px;
+      opacity: 0.8;
+    }
+    
+    /* Add a red background color to the cancel button */
+    .form-container .cancel {
+      background-color: rgb(114, 114, 114);
+    }
+    
+    /* Add some hover effects to buttons */
+    .form-container .btn:hover, .open-button:hover {
+      opacity: 1;
+    }
+    .redNote {
+			margin: 10px;
+			border: 2px solid ;
+			border-radius: 5px;
+			background-color: rgb(255, 50, 50);
+			text-align: center;
+			display: block;
+			text-decoration: none;
+		}
+    </style>
+<%if(error){%>
+  <div class="redNote">
+   <p><%=error%></p>
+  </div>
+  <%}%>
+  <table>
+    <tr>
+      <td><img src="<%=userInfo[0].icon%>" style="width:50px;height:50px;border-radius:50%;boder:black;"></td>
+      <td><%=userInfo[0].username%></td>
+    </tr>
+    </table>
+<h1>Edit user settings</h1>
+<form id="messageForm" action="/editUserSettings" enctype="multipart/form-data" method="POST">
+  <label for="username">Username</label>
+  <input id="username" type="text" name="username" value="<%=userInfo[0].username%>"></input>
+  <label for="email">Email</label>
+  <input id="email" type="email" name="email" value="<%=userInfo[0].email%>">
+  <label for="icon">Icon</label>
+  <input type="file" name="icon">
+  <input type="submit">
+</form> 
+
+<h2>Create a Chat room</h2>
+<form action="/createChatRoom" method="POST">
+  <label for="name">room name</label>
+  <input type="text" name="name" placeholder="name" required>
+  <label for="description">room description</label>
+  <input type="text" name="description" placeholder="description" required>
+  <label for="bots">Allow bots?</label>
+  <input type="checkbox" name="bots" placeholder="bots">
+  <input type="submit">
+</form>
+<h1>ChatRoom</h1>
+<table border = "1">
+<tr>
+    <td>Name</td>
+    <td>Icon</td>
+    <td>Description</td>
+    <td>InviteLink</td>
+    <td>Leave</td>
+    <td>ownerID</td>
+    <td>ID</td>
+ </tr>
+ 
+<%chatRooms.forEach(element => {%>
+    <tr>
+        <td><a href="/room/<%=element.id%>"><%=element.name%></a></td>
+        <td><%=element.icon%></a></td>
+        <td><%=element.description%></a></td>
+        <td><a href="/invite/<%=element.inviteCode%>">chat.freddie.pw/invite/<%=element.inviteCode%></a></td>
+        <td><a href="/leave/<%=element.inviteCode%>">Leave</a></td>
+        <td><%=element.ownerID%></td>
+        <td><%=element._id%></td>
+    </tr>
+    <%})%>
+
+</table>
+
+<!-- <div class="form-popup" id="deletePopup">
+    <form action="/action_page.php" class="form-container">
+      <h1>Login</h1>
+  
+      <label for="email"><b>Email</b></label>
+      <input type="text" placeholder="Enter Email" name="email" required>
+  
+      <label for="psw"><b>Password</b></label>
+      <input type="password" placeholder="Enter Password" name="psw" required>
+  
+      <button type="submit" class="btn">Login</button>
+      <button type="submit" class="btn cancel" onclick="closeForm()">Close</button>
+    </form>
+  </div> -->
+
+  <div class="form-popup" id="deletePopup">
+      <div class="form-container">
+      <h3>Are you sure you want to delete this? It is permanent</h3>
+      <button onclick="closeDelForm()" class="btn">No</button>
+  </div>
+</div>
+
+<div class="form-popup" id="editPopup">
+    <h2>Here you can edit your post box!</h2>
+    <form action="/editPostBox" class="form-container" method="POST">
+        <div id="editPopupForm">
+
+        </div>
+    </form>
+    <button onclick="closeEditForm()" class="btn">close</button>
+</div>
+
+<script>
+function openEditForm(id,name,url) {
+    var label1 = document.createElement("label"); 
+    label1.innerHTML = "Name"; 
+    label1.for = `name`;
+    label1.id = `jnfdmsaikop`;
+    
+    var input1 = document.createElement("input"); 
+    input1.type = "text"; 
+    input1.name = "name";
+    input1.value = name;
+    input1.id = `xwdsscds`;
+
+    var label2 = document.createElement("label"); 
+    label2.innerHTML = "RedirectURL"; 
+    label2.for = `RedirectURL`;
+    label2.id = `sxqamkop`;
+
+    
+    var input2 = document.createElement("input"); 
+    input2.type = "text"; 
+    input2.value = url;
+    input2.name = "redirectURL";
+    input2.id = `sakmxoip`;
+
+    var btn = document.createElement("button"); 
+    btn.type = "submit"; 
+    btn.class = "btn";
+    btn.innerHTML = "Submit";
+    btn.id = "sdjpiofv";
+
+    var hidden = document.createElement("input"); 
+    hidden.type = "hidden"; 
+    hidden.value = id;
+    hidden.name = "id";
+    hidden.id = "kokokij";
+
+    document.getElementById("editPopupForm").appendChild(label1);
+    document.getElementById("editPopupForm").appendChild(input1);
+    document.getElementById("editPopupForm").appendChild(label2);
+    document.getElementById("editPopupForm").appendChild(input2);
+    document.getElementById("editPopupForm").appendChild(hidden);
+    document.getElementById("editPopupForm").appendChild(btn);
+
+    document.getElementById("editPopup").style.display = "block";
+}
+
+function closeEditForm() {
+document.getElementById("jnfdmsaikop").remove();
+document.getElementById("xwdsscds").remove();
+document.getElementById("sxqamkop").remove();
+document.getElementById("sakmxoip").remove();
+document.getElementById("sdjpiofv").remove();
+document.getElementById("kokokij").remove();
+
+document.getElementById("editPopup").style.display = "none";
+}
+
+
+function openDelForm(id) {
+    var btn = document.createElement("a"); 
+    btn.innerHTML = "Yes"; 
+    btn.href = `/postBox/${id}/delete`;
+    btn.id = `fhnjdslafhj`;
+    btn.class = `btn cancel`;
+    document.getElementById("deletePopup").appendChild(btn);
+    document.getElementById("deletePopup").style.display = "block";
+}
+
+function closeDelForm() {
+document.getElementById("fhnjdslafhj").remove();
+document.getElementById("deletePopup").style.display = "none";
+}
+
+
+</script>

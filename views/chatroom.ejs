@@ -1,0 +1,176 @@
+<head>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script>
+        window.onload = function () {
+            var input = document.getElementById('message');
+            input.focus();
+            input.select();
+            var objDiv = document.getElementById("chat");
+            objDiv.scrollTop = objDiv.scrollHeight;
+        };
+        </script>
+
+</head>
+<a href="../dashboard">Go Back</a>
+<style>
+.members {
+    padding: 3px;
+    width: 30%;
+    border: 1px solid black;
+    position: absolute;
+    height:80%;
+    right: 0px;
+  }
+  #chat {
+    width: 69%;
+    padding: 3px;
+    /* border: 1px solid black; */
+
+    left: 0px;
+    height: 70%;
+    /* overflow:auto; */
+    overflow: auto;
+    overflow-x:hidden;
+  }
+ .messageSend {
+    padding: 3px;
+    /* border: 1px solid black; */
+    position: ;
+    bottom: 10%;
+    width: 69%;
+  }
+  .messageSend input{
+    width: 100%; 
+  }
+
+    </style>
+
+<table>
+<tr >
+    <td><img src="<%=room.icon%>" alt="image" style="width:75x;height:75px;border-radius:50%;boder:black;"></td>
+    <td><h1><%=room.name%> </h1></td>
+    <td><h5>Bots allowed: <%=room.bots%></h5></td>
+</tr>
+<tr>
+    <td></td>
+    <td><h3><%=room.description%></h3></td>
+    <td><h5>Created: <%=room.created.toString()%></h5></td>
+</tr>
+    
+</table>
+<%if (room.ownerID==user.id){%>
+<div class="editPanel">
+    <h1>Edit Room settings</h1>
+<form id="messageForm" action="/editRoomSettings" enctype="multipart/form-data" method="POST">
+  <label for="name">Room name</label>
+  <input id="name" type="text" name="name" value="<%=room.name%>"></input>
+  <label for="description">Room description</label>
+  <input id="description" type="text" name="description" value="<%=room.description%>">
+  <label for="icon">Icon</label>
+  <input type="file" name="icon">
+  <input type="hidden" name="ID" value="<%=room._id%>">
+  <input type="submit">
+</form> 
+    </div>
+<%}%>
+
+
+<div class="members">
+    <h3>Members</h3>  
+    <h5>Count: <%=members.length%></h5>
+    <table id="membersAdd">
+    <%members.forEach(element => {%>
+    <tr>
+        <td> <img src="<%=element.icon%>" alt="image" style="width:50px;height:50px;border-radius:50%;boder:black;"> </td>
+        <td><%=element.username%></td>
+    </tr>
+        <%})%>
+    </table>
+</div> 
+
+
+<div class="chat" id="chat">
+    <table id="messages">
+        <%if(messages.length>20){max=20}else{max=messages.length}%>
+            <%for (let index = 0; index < max; index++) {%>
+                <% message = messages[index]; %>
+                <!-- <%=message.senderID%> -->
+                <%temp=[];members.forEach(element => {temp.push(element._id)});%>
+                <%i = temp.indexOf(message.senderID);%>
+
+                <%for (let o = 0; o < temp.length; o++) {%>
+                    <%if(temp[o]==message.senderID) sender = members[o]%>
+                <%};%>
+
+                <tr>
+                    
+                    <td><img src="<%=sender.icon%>" style="width:50px;height:50px;border-radius:50%;boder:black;"></td>
+                    <td><h6><%=sender.username%> | <%=message.time%></h6></td>
+                    <td><%=message.message%></td>
+                </tr>
+              <%};%>
+
+        </table>  
+        <div id="anchor"></div>
+    </div>
+</div> 
+<div class="messageSend">
+    <form id="messageForm" action="javascript:sendMessage()">
+        <input id="message" type="text" name="message" placeholder="Type your message Here..."><br>
+    </form> 
+    <button onclick="sendMessage()">Send message!</button>
+    
+ <script>
+     const chatRoomID = "<%=room._id%>";
+     function sendMessage(){
+        var xhttp = new XMLHttpRequest()
+        const message = document.getElementById("message").value;
+        xhttp.open("POST", "../message", true);
+        xhttp.setRequestHeader("Content-Type", "application/json");
+        xhttp.send(JSON.stringify({"message": message , "roomID" :chatRoomID}));
+        document.getElementById("message").value = "";
+     }
+     </script>
+<script>
+    const socket = io('http://86.0.29.184/');
+        socket.on('connect', function() {
+        console.log("Connected to ws room: <%=room._id%>")
+    });
+    socket.on('userJoin', function(data){
+        console.log(data)
+        let table = document.getElementById("membersAdd");
+        let row = table.insertRow(table.length);
+
+        var img = document.createElement("img")
+        img.style = "width:50px;height:50px;border-radius:50%;boder:black;";
+        img.src = data.icon;
+
+        var p = document.createElement("p")
+        p.innerHTML = data.username;
+
+        let icon = row.insertCell(0).appendChild(img)
+        let name = row.insertCell(1).appendChild(p)
+
+    });
+
+    socket.on('message', function(data){
+
+    var img = document.createElement("img");
+    var h6 = document.createElement("h6");
+    h6.innerHTML = data.author.username+" | "+data.time;
+    img.src = data.author.icon;
+    img.style = "width:50px;height:50px;border-radius:50%;boder:black;";
+    let table = document.getElementById("messages");
+    let row = table.insertRow(table.length);
+    let icon = row.insertCell(0).appendChild(img)
+    let name = row.insertCell(1).appendChild(h6)
+    let content = row.insertCell(2).innerHTML = data.content;
+    console.log(data);
+    window.scrollBy(0, -10)
+    var objDiv = document.getElementById("chat");
+    objDiv.scrollTop = objDiv.scrollHeight;
+    });
+    
+        </script>
