@@ -1,6 +1,12 @@
 <style>
     body {font-family: Arial, Helvetica, sans-serif;}
     * {box-sizing: border-box;}
+    body{
+      background-color: #D9631E;
+      color: #260B01;
+      align-content: center;
+      text-align: center; 
+    }
     
     /* The popup form - hidden by default */
     .form-popup {
@@ -84,7 +90,7 @@
   <input id="email" type="email" name="email" value="<%=userInfo[0].email%>">
   <label for="icon">Icon</label>
   <input type="file" name="icon">
-  <input type="submit">
+  <input type="submit" value="Edit">
 </form> 
 
 <h2>Create a Chat room</h2>
@@ -95,10 +101,10 @@
   <input type="text" name="description" placeholder="description" required>
   <label for="bots">Allow bots?</label>
   <input type="checkbox" name="bots" placeholder="bots">
-  <input type="submit">
+  <input type="submit" value="Create">
 </form>
-<h1>ChatRoom</h1>
-<table border = "1">
+<h1>ChatRooms</h1>
+<table border = "1" style="padding: 10px;margin: auto;  text-align: center;">
 <tr>
     <td>Name</td>
     <td>Icon</td>

@@ -44,6 +44,12 @@
   .messageSend input{
     width: 100%; 
   }
+  body{
+      background-color: #D9631E;
+      color: #260B01;
+      align-content: center;
+      text-align: center; 
+    }
 
     </style>
 
@@ -134,7 +140,7 @@
      }
      </script>
 <script>
-    const socket = io('http://86.0.29.184/');
+    const socket = io('https://chat.freddie.pw/');
         socket.on('connect', function() {
         console.log("Connected to ws room: <%=room._id%>")
     });

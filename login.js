@@ -15,7 +15,7 @@ switch(req.body.type) {
 
         if (!username || !password) return res.status(400).send('missing data');
         if (!userData) return res.redirect('/login?error=That email or password is wrong');
-        if (!bcrypt.compare(password,userData.password)) return res.redirect('/login?error=That email or password is wrong');
+        if (!await bcrypt.compare(password,userData.password)) return res.redirect('/login?error=That email or password is wrong');
         req.session.user={
             loggedIn:true,
             id:userData._id,
