@@ -6,13 +6,13 @@ module.exports = async function(req, res, client){
     const { username, password, name, lastname, email, confurmPassword } = req.body;
 
 
-    const userData = await client.schema.users.findOne({ email: username || email });
+    let userData = await client.schema.users.findOne({ email: username || email });
 
 
 switch(req.body.type) {
     case "login":
   console.log(req.body.type)
-
+        if(!userData) userData = await client.schema.users.findOne({ username: username || email });
         if (!username || !password) return res.status(400).send('missing data');
         if (!userData) return res.redirect('/login?error=That email or password is wrong');
         if (!await bcrypt.compare(password,userData.password)) return res.redirect('/login?error=That email or password is wrong');
