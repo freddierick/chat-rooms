@@ -9,6 +9,7 @@ const { nanoid } = require("nanoid");
 const formidable = require('formidable');
 const fs = require("fs");
 const path = require("path");
+var cors = require('cors')
 
 mongoose.connect(process.env.mongoURI, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false })
 const app = express();
@@ -32,7 +33,7 @@ function addIconsToList(members,type){
   return members;
 }
 const client = {};
-
+app.use(cors())
 app.use(bodyparser.json());
 app.use(bodyparser.urlencoded({ extended: true }));
 app.use(session({ secret: 'PhotoPrint', resave: false, saveUninitialized: false, cookie: { maxAge: 600000 } }))
@@ -86,8 +87,9 @@ app.get(`/invite/:id`,checkAuth, async (req,res) => {
   if (!room) return res.redirect("../dashboard?e=That invite has not chat room!")
   if (room.members.includes(req.session.user.id)) return res.redirect("../dashboard?e=You are already in that ChatRoom!")
   const user = await client.schema.users.findOne({_id: req.session.user.id})
+  userInfo._id = toString(userInfo._id);
   ws.sendUserJoin(client, user, room._id);
-  await client.schema.chatRooms.updateOne({_id: room._id}, { $push: { members: req.session.user.id } });
+  await client.schema.chatRooms.updateOne({_id: room._id}, { $push: { members: user._id.toString() } });
   return res.redirect(`../room/${room._id}`)
 })
 
@@ -96,12 +98,14 @@ app.get(`/leave/:id`,checkAuth, async (req,res) => {
   if (!room) return res.redirect("../dashboard?e=You cant leave a room that doesn't exist!")
   if (!room.members.includes(req.session.user.id)) return res.redirect("../dashboard?e=You are not in that ChatRoom!")
   if (room.ownerID == req.session.user.id)return await client.schema.chatRooms.deleteOne({_id: room._id});
-  await client.schema.chatRooms.updateOne({_id: room._id}, { $pull: { members: req.session.user.id } });
+  const user = await client.schema.users.findOne({_id: req.session.user.id})
+  await client.schema.chatRooms.updateOne({_id: room._id}, { $pull: { members: user._id.toString() } });
   return res.redirect("../dashboard")
 })
 
 app.get(`/room/:id`,checkAuth, async (req,res) => {
   let room = await client.schema.chatRooms.findOne({_id: req.params.id});
+  if(!room) return res.redirect("/dashboard?e=that chat room doesn't exist!")
   if(!room.members.includes(req.session.user.id)) return res.redirect("/dashboard");
   const messages = await client.schema.messages.find({ chatRoomID: room._id});
   let members = await client.schema.users.find({'_id' : room.members});
@@ -114,15 +118,37 @@ app.get(`/room/:id`,checkAuth, async (req,res) => {
     room,
     messages,
     error:req.query.error,
-    user: req.session.user
+    user: req.session.user,
+  });
 });
-})
+
+app.get(`/room/:id/api`, async (req,res) => {
+  if (!req.session.user.loggedIn) return res.status(403).send({status:"error"});
+  let room = await client.schema.chatRooms.findOne({_id: req.params.id});
+  console.log(room)
+  // return res.status(404).send()
+  // if(!room.members.includes(req.session.user.id)) return res.redirect("/dashboard");
+  const messages = await client.schema.messages.find({ chatRoomID: room._id});
+  let members = await client.schema.users.find({'_id' : room.members});
+  members = addIconsToList(members,"user");
+  room.icon = getIconURL(room.icon,"room");
+  console.log(room)
+  console.log(members)
+  res.send({
+    members,
+    room,
+    messages,
+    error:req.query.error,
+    user: req.session.user,
+  });
+});
 
 app.post('/createChatRoom',checkAuth, async function (req, res) {
   console.log(req.body)
   const {name, description, bots} = req.body;
   if (!bots){ bot=false }else{ bot=true };
   if (!name || !description) res.status(400).send('no type specified');
+  let userInfo = await client.schema.users.findOne({ _id : req.session.user.id });
   await client.schema.chatRooms.create({ 
       ownerID: req.session.user.id,
       name,
@@ -165,9 +191,7 @@ app.get('/login', function (req, res) {
   app.post('/auth', async function (req, res) {
     console.log(req.body)
     if (!req.body.type) res.status(400).send('no type specified');
-    console.log(1)
-    login(req, res, client)
-    console.log(2)    
+    return login(req, res, client) 
   });
 
   app.post('/editUserSettings', checkAuth ,async function (req, res) {
@@ -202,9 +226,11 @@ app.get('/login', function (req, res) {
   
   app.get('/dashboard',checkAuth, async function (req, res) {
       console.log(req.session)
-    const chatRooms = await client.schema.chatRooms.find({ members : { $all : [req.session.user.id] }});
-    let userInfo = await client.schema.users.find({ _id : req.session.user.id });
-    userInfo = addIconsToList(userInfo,"user")
+
+    let userInfo = await client.schema.users.findOne({ _id : req.session.user.id });
+    const chatRooms = await client.schema.chatRooms.find({ members : { $all : [userInfo._id.toString()] }});
+    console.log(userInfo.icon)
+    userInfo = getIconURL(userInfo.icon,"user")
     res.render('dashboard.ejs', {
         userInfo,
         chatRooms,
@@ -213,28 +239,32 @@ app.get('/login', function (req, res) {
     }); 
   });
 
-  app.post('/message',checkAuth, async function (req, res) {
-    const senderID = req.session.user.id;
+  app.post('/message',checkAuth, async function (req, res, next) {
+    console.log(req.body)
+    let senderID = req.session.user.id || (await client.schema.users.findOne({WsToken : req.body.WsToken}))._id.toString();
     const { roomID, message } = req.body;
     if ( !roomID || !senderID ) return;
     const room = await client.schema.chatRooms.findOne({'_id' : roomID});
     if (!room) return;
     if (!room.members.includes(senderID)) return;
-    console.log(req.body)   
     res.status(200).send()
     if (message=="") return;
+    let isBot = true;
+    if (!req.body.WsToken) isBot = false;
     ws.sendMessage(client,{
       message:message,
       senderID:senderID,
-      roomID:roomID
+      roomID:roomID,
+      isBot:isBot
     });
     await client.schema.messages.create({
       chatRoomID:roomID,
       message:message,
       senderID:senderID,
+      isBot:isBot,
       time:Date.now()
   });
 
   });
 
-
+module.exports.schema = client.schema;

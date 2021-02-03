@@ -2,3 +2,4 @@
 * text=auto
 node_modules
 .env
+public/icons

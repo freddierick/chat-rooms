@@ -8,6 +8,8 @@ const productSchema = mongoose.Schema({
     password: {type: String, required: true},
     services: {type: Array, required: true},
     settings: {type: Object,required: true},
+    WsToken: {type: String},
+
 });
 
 module.exports = mongoose.model('users', productSchema);

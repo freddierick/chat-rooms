@@ -1,4 +1,5 @@
-const bcrypt = require('bcrypt');
+const bcrypt  = require('bcrypt');
+const { nanoid } = require("nanoid");
 
 module.exports = async function(req, res, client){
   console.log(req.body.type)
@@ -23,8 +24,26 @@ switch(req.body.type) {
             lastName:userData.lastName,
             email:userData.email,
         };
-        console.log(req.session.user)
         return res.redirect('/dashboard');
+      break;
+      case "bot":
+        if (!username || !password) return res.status(400).send('missing data');
+        if(!userData) userData = await client.schema.users.findOne({ username: username || email });
+        if (!userData) return res.send({error:"0"});
+        if (!await bcrypt.compare(password,userData.password)) return res.send({error:"0"});
+        req.session.user={
+            loggedIn:true,
+            id:userData._id,
+            firstName:userData.firstName,
+            lastName:userData.lastName,
+            email:userData.email,
+        };
+        const WsToken = nanoid(50);
+        console.log(WsToken)
+        id = JSON.parse(JSON.stringify(userData))._id
+        await client.schema.users.updateOne({_id: id}, { WsToken: WsToken });
+
+        return res.send({"message":"Welcome","username":userData.username,WsToken: WsToken});
       break;
     case "register":
         if (!name ||  !lastname || !email || !password || !username || !confurmPassword) res.status(400).send('missing data');
@@ -42,8 +61,9 @@ switch(req.body.type) {
             settings:{colPref:true,timZone:"GMT"},
         });
         userDataa = await client.schema.users.findOne({ email: email });
-        await client.schema.chatRooms.updateOne({_id: "5f78cf5499cd19c5cca2d261"}, { $push: { members: userDataa._id } });
-        await client.schema.chatRooms.updateOne({_id: "5f78cfff747410d738ce1582"}, { $push: { members: userDataa._id } });
+        iidd = JSON.parse(JSON.stringify(userDataa))._id
+        await client.schema.chatRooms.updateOne({_id: "5f78cf5499cd19c5cca2d261"}, { $push: { members: iidd } });
+        await client.schema.chatRooms.updateOne({_id: "5f78cfff747410d738ce1582"}, { $push: { members: iidd } });
         return res.redirect('/login?error=Account created now you need to log in ...')
       break;
     default:
